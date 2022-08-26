@@ -35,249 +35,278 @@ typedef struct
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef map<int, string> m;
-typedef pair<int, string> p;
-typedef m::iterator itr;
-typedef pair<string, vector<int>> fp;
-struct record
+struct info
 {
-  m data;
+  string name;
+  string num;
+  string birth;
+  string email;
+  string memo;
 };
 
-map<int, record> info;
-int id = 0;
-map<string, map<int, int>> fmap[5];
+typedef pair<string, vector<info *>> p;
+multimap<string, vector<info *>> db[5];
 
 void print()
 {
-  for (auto it = info.begin(); it != info.end(); it++)
-  {
-    cout << it->first << endl;
-    m tmp = it->second.data;
-
-    for (auto i = tmp.begin(); i != tmp.end(); i++)
-    {
-      cout << "[" << i->first << ", " << i->second << "] ";
-    }
-    cout << endl;
-    cout << "-------------------------------" << endl;
-  }
 
   for (int i = 0; i < 5; i++)
   {
-    map<string, map<int, int>> tmp = fmap[i];
-
-    for (auto it = tmp.begin(); it != tmp.end(); it++)
+    for (auto it = db[i].begin(); it != db[i].end(); it++)
     {
-      cout << "[" << it->first << ": ";
-      for (auto k = it->second.begin(); k != it->second.end(); k++)
+      string field = it->first;
+      cout << field << ": ";
+      for (int j = 0; j < it->second.size(); j++)
       {
-        cout << k->first << " ";
+        cout << it->second[j]->name << ", ";
       }
-      cout << "]" << endl;
+      cout << endl;
     }
-    cout << "=====================" << endl;
+    cout << "------------------------------------------" << endl;
   }
 }
 
 // DB 초기화
 void InitDB()
 {
-  info.clear();
-  id = 0;
   for (int i = 0; i < 5; i++)
   {
-    fmap[i].clear();
+    db[i].clear();
+  }
+}
+
+void addOne(int idx, string field, info *sinfo)
+{
+
+  auto it = db[idx].find(field);
+
+  if (it != db[idx].end())
+  {
+    it->second.push_back(sinfo);
+  }
+  else
+  { // 처음 추가
+    vector<info *> temp;
+    temp.push_back(sinfo);
+
+    db[idx].insert(p(field, temp));
   }
 }
 
 // record 한 개 추가
 void Add(char *name, char *number, char *birthday, char *email, char *memo)
 {
-  string arr[5] = {name, number, birthday, email, memo};
-  m tmp;
-  /*tmp.insert(p(0, name));
-  tmp.insert(p(1, number));
-  tmp.insert(p(2, birthday));
-  tmp.insert(p(3, email));
-  tmp.insert(p(4, memo));*/
+  // cout << "add start" << endl;
+  string temp[5] = {name, number, birthday, email, memo};
+
+  info *sinfo = new info;
+  sinfo->name = name;
+  sinfo->num = number;
+  sinfo->birth = birthday;
+  sinfo->email = email;
+  sinfo->memo = memo;
+
   for (int i = 0; i < 5; i++)
   {
-    tmp.insert(p(i, arr[i]));
+    addOne(i, temp[i], sinfo);
   }
-
-  record addRecord;
-  addRecord.data = tmp;
-  info.insert(pair<int, record>(++id, addRecord));
-
-  /*fmap[0].insert(fp(name, { id }));
-  fmap[1].insert(fp(number, { id }));
-  fmap[2].insert(fp(birthday, { id }));
-  fmap[3].insert(fp(email, { id }));
-  fmap[4].insert(fp(memo, { id }));*/
-
-  // cout << "id: " << id << " -> ";
-  for (int i = 0; i < 5; i++)
-  {
-    // cout << arr[i] << ", ";
-    auto fit = fmap[i].find(arr[i]);
-    if (fit != fmap[i].end())
-    {
-      fit->second.insert(pair<int, int>(id, 1));
-    }
-    else
-    {
-      map<int, int> tmp;
-      tmp.insert(pair<int, int>(id, 1));
-      fmap[i].insert(pair<string, map<int, int>>(arr[i], tmp));
-    }
-    /*auto fit = fmap[i].find(arr[i]);
-    if (fit != fmap[i].end()) {
-      printf("중복!\n");
-      fit->second.insert(pair<int, int>(id, 1));
-    }
-    else {
-      fmap[i].insert(fp(arr[i], { id }));
-    }*/
-  }
-  // cout << endl;
 
   // print();
-}
-
-vector<int> find_id(FIELD field, char *str)
-{
-  // if(field == 2)
-  // print();
-  vector<int> ret;
-
-  /*for (auto it = info.begin(); it != info.end(); it++) {
-    m tmp = it->second.data;
-
-    if (tmp.at(field) == str) {
-      //cout << field << ", " << str << endl;
-      ret.push_back(it->first);
-    }
-  }
-
-  /*for (int i = 0; i < ret.size(); i++) {
-    cout << ret[i] << " ";
-  }
-  cout << endl;*/
-
-  auto fit = fmap[field].find(str);
-  if (fit == fmap[field].end())
-  {
-    return ret;
-  }
-
-  // 아이디 맵
-  map<int, int> id = fit->second;
-
-  /*for (int i = 0; i < id.size(); i++) {
-    int tmp = id[i];
-    if (info.find(tmp) == info.end())
-      continue;
-    ret.push_back(tmp);
-  }*/
-
-  for (auto it = id.begin(); it != id.end(); it++)
-  {
-    int tmp = it->first;
-    // cout << tmp << endl;
-
-    // 삭제된 애면 건너 띠어
-    if (info.find(tmp) == info.end())
-      continue;
-
-    ret.push_back(tmp);
-  }
-
-  return ret;
+  // cout << "add done" << endl;
 }
 
 // field 값이 str인 record 삭제 후, 삭제된 record 개수 출력, 없으면 0
 int Delete(FIELD field, char *str)
 {
-  vector<int> ret = find_id(field, str);
+  // cout << "delete start" << endl;
+  auto it = db[field].find(str);
 
-  if (ret.size() == 0)
-    return 0;
-
-  for (int i = 0; i < ret.size(); i++)
+  if (it == db[field].end())
   {
-    int id = ret[i];
-    info.erase(id);
+    // cout << "delete done" << endl;
+    return 0;
   }
 
-  // cout << ret.size()<< endl;
-  return ret.size();
+  int ret = it->second.size();
+
+  for (int i = 0; i < ret; i++)
+  {
+    info *dinfo = it->second[i];
+    string temp[5];
+    temp[0] = dinfo->name;
+    temp[1] = dinfo->num;
+    temp[2] = dinfo->birth;
+    temp[3] = dinfo->email;
+    temp[4] = dinfo->memo;
+
+    for (int j = 0; j < 5; j++)
+    {
+      if (j == field)
+      {
+        continue;
+      }
+
+      auto fit = db[j].find(temp[j]);
+      for (int k = 0; k < fit->second.size(); k++)
+      {
+        if (fit->second[k] == dinfo)
+        {
+          fit->second.erase(fit->second.begin() + k);
+          break;
+        }
+      }
+    }
+  }
+
+  db[field].erase(str);
+
+  // print();
+  // cout << "delete done" << endl;
+  return ret;
 }
 
 // field 값이 str인 record를 찾고, 해당 record의 changefield 값을 changestr로 변경
 // 변경한 record의 개수, 없으면 0
 int Change(FIELD field, char *str, FIELD changefield, char *changestr)
 {
-  vector<int> ret = find_id(field, str);
+  // cout << "change start" << endl;
+  // print();
 
-  if (ret.size() == 0)
-    return 0;
+  auto it = db[field].find(str);
 
-  for (int i = 0; i < ret.size(); i++)
+  if (it == db[field].end())
   {
-    int id = ret[i];
-    string old = info.at(id).data[changefield];
-    info.at(id).data[changefield] = changestr;
+    // cout << "change done" << endl;
+    return 0;
+  }
 
-    // auto fit = fmap[changefield].find(old);
-    fmap[changefield].at(old).erase(id);
+  int ret = it->second.size();
+  string old;
 
-    auto fit = fmap[changefield].find(changestr);
-    if (fit != fmap[changefield].end())
+  // cout << "change count: " << ret << endl;
+  // cout << field << " " << str << " " << changefield << " " << changestr << endl;
+  // print();
+
+  for (int i = 0; i < ret; i++)
+  {
+    info *cinfo = it->second[i];
+
+    switch (changefield)
     {
-      fit->second.insert(pair<int, int>(id, 1));
+    case 0:
+      old = cinfo->name;
+      cinfo->name = changestr;
+      break;
+    case 1:
+      old = cinfo->num;
+      cinfo->num = changestr;
+      break;
+    case 2:
+      old = cinfo->birth;
+      cinfo->birth = changestr;
+      break;
+    case 3:
+      old = cinfo->email;
+      cinfo->email = changestr;
+      break;
+    case 4:
+      old = cinfo->memo;
+      cinfo->memo = changestr;
+      break;
+    default:
+      break;
     }
-    else
+
+    addOne(changefield, changestr, cinfo);
+
+    if (field != changefield)
     {
-      map<int, int> tmp;
-      tmp.insert(pair<int, int>(id, 1));
-      fmap[changefield].insert(pair<string, map<int, int>>(changestr, tmp));
+      auto dit = db[changefield].find(old); // 예전 값을 찾아서
+      for (int j = 0; j < dit->second.size(); j++)
+      {
+        if (dit->second[j] == cinfo)
+        { // 기존 정보 삭제
+          dit->second.erase(dit->second.begin() + j);
+          break;
+        }
+      }
     }
   }
 
-  // cout << ret.size() << endl;
-  return ret.size();
+  if (field == changefield)
+  {
+    db[changefield].erase(old);
+  }
+
+  // print();
+  // cout << "change done" << endl;
+
+  return ret;
 }
 
 // field 값이 str인 record를 찾고 record 개수와 record의 returnfield 값을 반환
 // result.str은 count 값이 0이거나 2 이상인 경우 무시
 RESULT Search(FIELD field, char *str, FIELD ret_field)
 {
+  // cout << "search start" << endl;
+  // print();
   RESULT result;
   result.count = 0;
-  vector<int> ret = find_id(field, str);
 
-  if (ret.empty())
+  auto it = db[field].find(str);
+
+  if (it == db[field].end())
   {
+    // cout << "search done" << endl;
     return result;
   }
 
-  result.count = ret.size();
+  result.count = it->second.size();
 
-  if (ret.size() == 1)
+  if (result.count == 0 || result.count >= 2)
   {
-    int id = ret.front();
-    string ret_str = info.at(id).data[ret_field];
-    int i;
-    for (i = 0; i < ret_str.size(); i++)
-    {
-      result.str[i] = ret_str[i];
-    }
-    result.str[i] = '\0';
-    // cout << result.str << endl;
+    // cout << "search done" << endl;
+    return result;
   }
 
-  // cout << result.count << " " << result.str << endl;
+  string ret;
+
+  // cout << "[" << it->second[0]->name << ", ";
+  // cout << it->second[0]->num << ", ";
+  // cout << it->second[0]->birth << ", ";
+  // cout << it->second[0]->email << ", ";
+  // cout << it->second[0]->memo << "]" << endl;
+
+  switch (ret_field)
+  {
+  case 0:
+    ret = it->second[0]->name;
+    break;
+  case 1:
+    ret = it->second[0]->num;
+    break;
+  case 2:
+    ret = it->second[0]->birth;
+    break;
+  case 3:
+    ret = it->second[0]->email;
+    break;
+  case 4:
+    ret = it->second[0]->memo;
+    break;
+  default:
+    break;
+  }
+
+  int i;
+  for (i = 0; i < ret.size(); i++)
+  {
+    result.str[i] = ret[i];
+  }
+  result.str[i] = '\0';
+
+  // cout << result.str << ", " << result.count << endl;
+  // cout << "search done" << endl;
   return result;
 }
 
@@ -465,52 +494,6 @@ int main()
     printf("#%d %d\n", tc, Score);
   }
   printf("TotalScore = %d\n", TotalScore);
-
-  /*map<string, vector<int>> temp;
-
-  temp.insert(pair<string, vector<int>>("kim", { 1 }));
-
-  string str = "lee";
-  auto fit = temp.find(str);
-  if (fit != temp.end()) {
-    cout << "중복임" << endl;
-    //fit->second.push_back(2);
-    temp.erase(str);
-  }
-  else {
-    cout << "중복 아님" << endl;
-    temp.insert(pair<string, vector<int>>(str, { 2 }));
-  }
-
-  for (auto it = temp.begin(); it != temp.end(); it++) {
-    cout << it->first << endl;
-    for (int i = 0; i < it->second.size(); i++) {
-      cout << it->second[i] << ", ";
-    }
-    cout << endl;
-  }
-  cout << endl;
-
-  string n = "kim";
-  string num = "1";
-  string b = "1999";
-  string e = "a.com";
-  string memo = "aaa";
-  map<string, string> m;
-  m.insert(pair<string, string>("name", n));
-  m.insert(pair<string, string>("number", num));
-  m.insert(pair<string, string>("birthday", b));
-  m.insert(pair<string, string>("email", e));
-  m.insert(pair<string, string>("memo", memo));
-  record rcd;
-  rcd.m = m;
-
-  sinfo.push_back(rcd);
-
-  map<string, string> tmp = sinfo[0].m;
-  for (auto it = tmp.begin(); it != tmp.end(); it++) {
-    cout << it->first << ", " << it->second << endl;
-  }*/
 
   return 0;
 }
